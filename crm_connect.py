@@ -38,7 +38,7 @@ async def all_handler(request):
             if result == 'error':
                 # Если проблема с подключением к БД
                 return bad_request("Mysql connection error")
-            elif result == 'not found':
+            elif result == None:
                 tyers += 1
                 if tyers == 2:
                     return bad_request("not found id")
