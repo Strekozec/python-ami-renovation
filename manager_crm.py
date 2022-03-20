@@ -27,6 +27,7 @@ manager = Manager(loop=asyncio.get_event_loop(),
                   ping_delay=5,
                   )
 
+
 # Функция асинхронно ловит события и каждое событие обрабатывает отдельно по условию
 async def callback(mngr: panoramisk.Manager, msg: panoramisk.message) -> None:
     """Catch AMI Events/Actions"""
@@ -51,21 +52,29 @@ async def callback(mngr: panoramisk.Manager, msg: panoramisk.message) -> None:
                                         f"8{msg.Exten}")
             send_request(payload)
 
-        # Проверяем, что вызов исходящий внешний, а именно, что канал образован номером, длина которого не превышает 6 знаков
-        # (внутренний номер) и отправляем данные в срм.
-        elif msg.Linkedid == msg.Uniqueid and len(msg.CallerIDNum) < 6 and len(msg.Exten) > 6:
-            all_id[msg.Linkedid]['type'] = "out"
-            all_id[msg.Linkedid]['contact_phone_number'] = msg.Exten
+
+        # Проверяем, что вызов исходящий внешний, а именно, что канал образован номером, длина которого не превышает
+        # 6 знаков (внутренний номер) и отправляем данные в срм.
+        elif msg.Linkedid == msg.Uniqueid and len(msg.CallerIDNum) < 6 and (len(msg.Exten) > 6 or msg.Exten == 's'):
             all_id[msg.Linkedid]['clinic_phone_number'] = None
             all_id[msg.Linkedid]['exten'] = msg.CallerIDNum
+            # Для вызова из СРМ, где мы сами формируем Linkedid:
+            if f'-{msg.CallerIDNum}-' in msg.Linkedid:
+                all_id[msg.Linkedid]['type'] = "out"
+                all_id[msg.Linkedid]['contact_phone_number'] = msg.Linkedid[-11:]
+            # Для остальных вызовов
+            else:
+                all_id[msg.Linkedid]['type'] = "out"
+                all_id[msg.Linkedid]['contact_phone_number'] = msg.Exten
             payload = events.event_call(msg.Uniqueid,
                                         all_id[msg.Linkedid]['type'],
                                         all_id[msg.Linkedid]['contact_phone_number'],
                                         all_id[msg.Linkedid]['clinic_phone_number'])
             send_request(payload)
 
+
     # Поиск совпадений для состояния Ringing у нового канала (WAITING для CRM)
-    # Проверяем, что канал и linkedid находится в множестве
+    # Проверяем, что канал и Linkedid находится в множестве
 
     elif msg.event == 'DialBegin' and msg.Linkedid in all_id:
         event = {"Event": msg.event.lower(),
@@ -79,7 +88,7 @@ async def callback(mngr: panoramisk.Manager, msg: panoramisk.message) -> None:
         event_waiting = event
         # Для входящих waiting
         if msg.ChannelState == '4' and all_id[msg.Linkedid]['type'] == "in":
-            log_write(event_waiting, None)
+            log_write('Waiting', event_waiting, None)
             if 'Local' in msg.Channel:
                 all_id[msg.Linkedid]['exten_channel_waiting'][msg.Uniqueid] = msg.DestCallerIDNum
                 payload = events.event_waiting(msg.Uniqueid,
@@ -101,6 +110,18 @@ async def callback(mngr: panoramisk.Manager, msg: panoramisk.message) -> None:
 
         # Для исходящих waiting
         elif msg.ChannelState == '4' or msg.ChannelState == '6' and all_id[msg.Linkedid]['type'] == "out":
+            all_id[msg.Linkedid]['exten_id_waiting'] = msg.DestUniqueid
+            all_id[msg.Linkedid]['exten_number_waiting'] = all_id[msg.Linkedid]['exten']
+            payload = events.event_waiting(all_id[msg.Linkedid]['exten_id_waiting'],
+                                           msg.Linkedid,
+                                           all_id[msg.Linkedid]['type'],
+                                           all_id[msg.Linkedid]['contact_phone_number'],
+                                           all_id[msg.Linkedid]['clinic_phone_number'],
+                                           all_id[msg.Linkedid]['exten'])
+            send_request(payload)
+
+        # Для исходящих из CRM waiting
+        elif msg.ChannelState == '4' or msg.ChannelState == '6' and all_id[msg.Linkedid]['type'] == "out_from_crm":
             all_id[msg.Linkedid]['exten_id_waiting'] = msg.DestUniqueid
             all_id[msg.Linkedid]['exten_number_waiting'] = all_id[msg.Linkedid]['exten']
             payload = events.event_waiting(all_id[msg.Linkedid]['exten_id_waiting'],
@@ -138,11 +159,12 @@ async def callback(mngr: panoramisk.Manager, msg: panoramisk.message) -> None:
             # Для исходящего на внешнее направление
             elif all_id[msg.Linkedid]['type'] == "out":
                 all_id[msg.Linkedid]['exten_uniqueid_up'] = all_id[msg.Linkedid]['exten_id_waiting']
-                all_id[msg.Linkedid]['exten_number_up'] = all_id[msg.Linkedid]['contact_phone_number']
+                all_id[msg.Linkedid]['exten_number_up'] = all_id[msg.Linkedid]['exten_number_waiting']
                 payload = events.event_up(all_id[msg.Linkedid]['exten_uniqueid_up'],
-                                          all_id[msg.Linkedid]['exten'])
+                                          all_id[msg.Linkedid]['exten_number_waiting'])
                 send_request(payload)
-
+                del all_id[msg.Linkedid]['exten_id_waiting']
+                del all_id[msg.Linkedid]['exten_number_waiting']
 
     # Завершение вызова
     elif msg.event == "Hangup":
@@ -154,12 +176,12 @@ async def callback(mngr: panoramisk.Manager, msg: panoramisk.message) -> None:
                  "Linkedid": msg.Linkedid,
                  "ChannelState": msg.ChannelState}
         event_hangup = event
-        #pprint(event)
-        #print('')
+        # pprint(event)
+        # print('')
         # Для удаления данных о звонке из all_id проверяем, что linkedid и uniqueid равны
         # Основной внешний канал
         if msg.Linkedid in all_id and msg.Linkedid == msg.Uniqueid and msg.Linkedid not in not_use_linkedid:
-            log_write(event_hangup, all_id)
+            log_write('Main channel', event_hangup, all_id)
             # Проверяем, что exten_uniqueid_up есть в словаре, значит Hangup основного канала прилетел раньше,
             # поэтому нам необходимо сначала отправить hangup внутреннего, а затем внешнего
             # ОСНОВНОЙ ВНЕШНИЙ. Если внутренний ответил на звонок
@@ -194,13 +216,13 @@ async def callback(mngr: panoramisk.Manager, msg: panoramisk.message) -> None:
                 elif all_id[msg.Linkedid]['type'] == 'out':
                     # Hangup внешнего после того, как завершили exten_uniqueid_up
                     payload = events.event_hangup(msg.Linkedid,
-                                                  all_id[msg.Linkedid]['exten'])
+                                                  all_id[msg.Linkedid]['contact_phone_number'])
                     send_request(payload)
                     del all_id[msg.Linkedid]
 
         # Не основной внешний канал
         elif msg.Linkedid in all_id and msg.Linkedid != msg.Uniqueid:
-            log_write(event_hangup, all_id)
+            log_write('Additional channel', event_hangup, all_id)
             # Hangup для внутреннего, который ответил на вызов
             if 'exten_uniqueid_up' in all_id[msg.Linkedid] \
                     and all_id[msg.Linkedid]['exten_uniqueid_up'] == msg.Uniqueid:
@@ -208,6 +230,7 @@ async def callback(mngr: panoramisk.Manager, msg: panoramisk.message) -> None:
                                               all_id[msg.Linkedid]['exten_number_up'])
                 send_request(payload)
                 del all_id[msg.Linkedid]['exten_uniqueid_up']
+                del all_id[msg.Linkedid]['exten_number_up']
                 '''# Удаление данных о Hangup для внутреннего, который был завершен в основном канале
                 elif 'exten_uniqueid_up_hangup' in all_id[msg.Linkedid] \
                     and all_id[msg.Linkedid]['exten_uniqueid_up_hangup'] == msg.Uniqueid:
@@ -216,7 +239,7 @@ async def callback(mngr: panoramisk.Manager, msg: panoramisk.message) -> None:
             # Входящие звонки
             elif 'exten_channel_waiting' in all_id[msg.Linkedid] and \
                     msg.Uniqueid in all_id[msg.Linkedid]['exten_channel_waiting']:
-                #pprint(all_id)
+                # pprint(all_id)
                 payload = events.event_hangup(msg.Uniqueid,
                                               all_id[msg.Linkedid]['exten_channel_waiting'][msg.Uniqueid])
                 send_request(payload)
@@ -246,17 +269,17 @@ async def callback(mngr: panoramisk.Manager, msg: panoramisk.message) -> None:
 
 # Функия отправки запроса в систему CRM
 def send_request(payload):
-
+    comment = 'Send request'
     answer = (requests.post(url, data=json.dumps(payload), headers=headers)).json()
-    log_write(payload, answer)
+    log_write(comment, payload, answer)
 
 
 # Запись в лог файл для дебага
-def log_write(payload, answer):
+def log_write(comment, payload, answer):
     nowtime = time.strftime('%H:%M:%S')
-    #pprint(nowtime + '' + str(payload))
-    with open('/var/log/amiconnect.log', 'a') as file:
-        file.write(nowtime + " " + str(payload) + "\n")
+    # pprint(nowtime + '' + str(payload))
+    with open('/var/log/renovation/amiconnect.log', 'a') as file:
+        file.write(comment + "   " + nowtime + " " + str(payload) + "\n")
         file.write(str(answer) + "\n")
 
 
