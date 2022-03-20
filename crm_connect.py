@@ -2,33 +2,36 @@
 
 from aiohttp import web
 import mysql_connect
+import originate_ami
+import time
 
 
 async def all_handler(request):
     data = await request.post()
     # проверяем метод, который получили и сохраняем значения номеров:
     if data["method"] == 'make_call':
-        number = f"8{data['contact_phone_number'][1:]}"
         operator = f"{data['employee_phone_number']}"
         # проверяем длину внутреннего номера
         if len(data["employee_phone_number"]) < 6:
             # проверяем длину вызываемого номера, тут далее обязательно должен быть return, для корректного выхода
             if len(data['contact_phone_number']) == 11:
-                # проверяем, что первый символ вызываемого номера 7, здесь работаем с сохраненными номерами
-                #
-                #
-                #
-                #
+				#тут надо вставить установку на паузу для employee_phone_number?
+                # проверяем, что первый символ вызываемого номера 7, меняем на 8 и делаем originate
                 if data['contact_phone_number'][0] == '7':
+                    number = f"8{data['contact_phone_number'][1:]}"
+                    originate_ami.originate(operator, number)
                     return good_request_call()
+                # проверяем, что первый символ вызываемого номера 8, ничего не меняем и делаем originate
                 elif data['contact_phone_number'][0] == '8':
+                    number = f"{data['contact_phone_number']}"
+                    originate_ami.originate(operator, number)
                     return good_request_call()
                 else:
                     return bad_request("bad outgoing full number without 7 or 8")
             else:
                 return bad_request("len outgoing number not 11")
         else:
-            return bad_request("len extension 6 or higher")
+            return bad_request("len extension 6 or lower")
 
     elif data["method"] == 'call_records':
         tyers = 0
@@ -71,7 +74,15 @@ def bad_request(reason):
         "error": 1,
         "data": reason
     }
+    log_write(response_data)
     return web.json_response(response_data)
+
+
+def log_write(payload):
+    nowtime = time.strftime('%H:%M:%S')
+    #pprint(nowtime + '' + str(payload))
+    with open('/var/log/renovation/crmconnect.log', 'a') as file:
+        file.write(nowtime + " " + str(payload) + "\n")
 
 
 def web_server():
