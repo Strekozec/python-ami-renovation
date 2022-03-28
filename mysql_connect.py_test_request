@@ -49,6 +49,7 @@ def main():
     print("start")
     id = ['1648375139.27977801', '1648375139.27977796']
     for i in id:
+        print(i)
         call_record(connection(), i)
         print("1")
 
