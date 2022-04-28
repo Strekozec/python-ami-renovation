@@ -212,12 +212,22 @@ async def callback(mngr: panoramisk.Manager, msg: panoramisk.message) -> None:
             # поэтому нам необходимо сначала отправить hangup внутреннего, а затем внешнего
             # ОСНОВНОЙ ВНЕШНИЙ. Если внутренний ответил на звонок
             if 'exten_uniqueid_up' in all_id[msg.Linkedid]:
-                payload = events.event_hangup(all_id[msg.Linkedid]['exten_uniqueid_up'],
-                                              all_id[msg.Linkedid]['exten_number_up'])
-                send_request(payload, 'event_hangup_log')
-                payload = events.event_hangup(msg.Linkedid,
-                                              all_id[msg.Linkedid]['contact_phone_number'])
-                send_request(payload, 'event_hangup_log')
+                log_write('event_hangup_log(exten_uniqueid_up)', event_hangup, None)
+                if all_id[msg.Linkedid]['type'] == 'in':
+                    log_write('event_hangup_log(exten_uniqueid_up)', event_hangup, None)
+                    payload = events.event_hangup(all_id[msg.Linkedid]['exten_uniqueid_up'],
+                                                  all_id[msg.Linkedid]['exten_number_up'])
+                    send_request(payload, 'event_hangup_log')
+                    payload = events.event_hangup(msg.Linkedid,
+                                                  all_id[msg.Linkedid]['contact_phone_number'])
+                    send_request(payload, 'event_hangup_log')
+                elif all_id[msg.Linkedid]['type'] == 'out':
+                    payload = events.event_hangup(all_id[msg.Linkedid]['exten_uniqueid_up'],
+                                                  all_id[msg.Linkedid]['exten_number_up'])
+                    send_request(payload, 'event_hangup_log')
+                    payload = events.event_hangup(msg.Linkedid,
+                                                  all_id[msg.Linkedid]['contact_phone_number'])
+                    send_request(payload, 'event_hangup_log')
                 del all_id[msg.Linkedid]
             # Проверка hangup для тех, кто был в состоянии waiting
             elif 'exten_channel_waiting' in all_id[msg.Linkedid] and \
@@ -233,6 +243,7 @@ async def callback(mngr: panoramisk.Manager, msg: panoramisk.message) -> None:
                 del all_id[msg.Linkedid]
             # Hangup основного канала, если он не был завершен до внутреннего
             else:
+                log_write('event_hangup_log(else)', event_hangup, None)
                 if all_id[msg.Linkedid]['type'] == 'in':
                     # Hangup внешнего после того, как завершили exten_uniqueid_up
                     payload = events.event_hangup(msg.Linkedid,
@@ -249,6 +260,7 @@ async def callback(mngr: panoramisk.Manager, msg: panoramisk.message) -> None:
         # Не основной внешний канал
         elif msg.Linkedid in all_id and msg.Linkedid != msg.Uniqueid:
             # Hangup для внутреннего, который ответил на вызов
+            log_write('event_hangup_log(additional_channel)', event_hangup, None)
             if 'exten_uniqueid_up' in all_id[msg.Linkedid] \
                     and all_id[msg.Linkedid]['exten_uniqueid_up'] == msg.Uniqueid:
                 payload = events.event_hangup(all_id[msg.Linkedid]['exten_uniqueid_up'],
