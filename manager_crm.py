@@ -39,7 +39,7 @@ async def callback(mngr: panoramisk.Manager, msg: panoramisk.message) -> None:
 
     # Смотрим, что это новый канал
     elif msg.event == "Newchannel":
-        log_write('all_id_log', None, all_id)
+        log_write('all_id_log', all_id, None)
         event = {"Event": msg.event.lower(),
                  "Channel": msg.Channel,
                  "CallerIDNum": msg.CallerIDNum,
@@ -51,7 +51,6 @@ async def callback(mngr: panoramisk.Manager, msg: panoramisk.message) -> None:
         # Проверяем, что вызов входящий, а именно, что канал образован номером, длина которого превышает 6 знаков и
         # записываем в all_id необходимые значения для дальнейшей отправки в CRM
         if msg.Linkedid == msg.Uniqueid and len(msg.CallerIDNum) > 4:
-            '''payload = call_in.newchannel()'''
             all_id[msg.Linkedid]['type'] = "in"
             all_id[msg.Linkedid]['contact_phone_number'] = msg.CallerIDNum
             all_id[msg.Linkedid]['clinic_phone_number'] = f"8{msg.Exten}"
