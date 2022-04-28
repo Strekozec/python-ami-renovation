@@ -3,7 +3,7 @@ def event_call(id, type, contact_phone_number, clinic_phone_number):
     """
                 event:call
                 id:Идентификатор звонка
-                type:Направление звонка (in)
+                type:Направление звонка
                 contact_phone_number:Номер абонента
                 clinic_phone_number:Номер клиники
     """
