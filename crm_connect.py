@@ -3,12 +3,11 @@
 from aiohttp import web
 import mysql_connect
 import originate_ami
-import time
-
+import logs
 
 async def all_handler(request):
     data = await request.post()
-    log_write(data)
+    logs.log_write('crmconnect', data, None)
     # проверяем метод, который получили и сохраняем значения номеров:
     if data["method"] == 'make_call':
         operator = f"{data['employee_phone_number']}"
@@ -67,7 +66,7 @@ def good_request(result):
             "file_link": result
         }
     }
-    log_write(response_data)
+    logs.log_write('crmconnect', response_data, None)
     return web.json_response(response_data)
 
 
@@ -76,15 +75,8 @@ def bad_request(reason):
         "error": 1,
         "data": reason
     }
-    log_write(response_data)
+    logs.log_write('crmconnect', response_data, None)
     return web.json_response(response_data)
-
-
-def log_write(payload):
-    nowtime = time.strftime('%H:%M:%S')
-    #pprint(nowtime + '' + str(payload))
-    with open('/var/log/renovation/crmconnect.log', 'a') as file:
-        file.write(nowtime + " " + str(payload) + "\n")
 
 
 def web_server():

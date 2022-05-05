@@ -3,6 +3,7 @@
 from asterisk.ami import AMIClient
 from asterisk.ami import SimpleAction
 import time
+import logs
 
 def originate(operator, number):
     client = AMIClient(address='127.0.0.1',port=5038)
@@ -17,12 +18,6 @@ def originate(operator, number):
     )
     client.send_action(action)
     client.logoff()
-    log_write(payload=f'{operator}-{number}')
+    logs.log_write('originate', f'{operator}-{number}', None)
     return
-
-
-def log_write(payload):
-    nowtime = time.strftime('%H:%M:%S')
-    with open('/var/log/renovation/originate.log', 'a') as file:
-        file.write(time.strftime("%m.%d.%Y, %H:%M:%S") + " " + str(payload) + "\n")
 

@@ -1,15 +1,14 @@
 #!/usr/bin/python3
 
 import events
-import time
 import asyncio
 import json
 import requests
 import panoramisk
-from pprint import pprint
 import crm_connect
 from panoramisk import Manager
 from collections import defaultdict
+import logs
 
 url = 'http://192.168.129.55:3010/api/calls?api_key=2f71cb779d503188e42bdff2aeaa234c'
 headers = {'Content-type': 'application/json',  # Определение типа данных
@@ -46,11 +45,11 @@ async def callback(mngr: panoramisk.Manager, msg: panoramisk.message) -> None:
                  "Linkedid": msg.Linkedid,
                  "ChannelState": msg.ChannelState}
         event_call = event
-        log_write('event_call_log', event_call, None)
+        logs.log_write('event_call_log', event_call, None)
         # Проверяем, что вызов входящий, а именно, что канал образован номером, длина которого превышает 6 знаков и
         # записываем в all_id необходимые значения для дальнейшей отправки в CRM
         if msg.Linkedid == msg.Uniqueid and len(msg.CallerIDNum) > 4:
-            log_write('all_id_log', all_id, None)
+            logs.log_write('all_id_log', all_id, None)
             all_id[msg.Linkedid]['type'] = "in"
             all_id[msg.Linkedid]['contact_phone_number'] = msg.CallerIDNum
             all_id[msg.Linkedid]['clinic_phone_number'] = f"8{msg.Exten}"
@@ -65,7 +64,7 @@ async def callback(mngr: panoramisk.Manager, msg: panoramisk.message) -> None:
         # Проверяем, что вызов исходящий внешний, а именно, что канал образован номером, длина которого не превышает
         # 6 знаков (внутренний номер) и отправляем данные в срм.
         elif msg.Linkedid == msg.Uniqueid and len(msg.CallerIDNum) < 6 and (len(msg.Exten) > 6 or msg.Exten == 's'):
-            log_write('all_id_log', all_id, None)
+            logs.log_write('all_id_log', all_id, None)
             # Для вызова из СРМ, где мы сами формируем Linkedid:
             if f'-{msg.CallerIDNum}-' in msg.Linkedid:
                 all_id[msg.Linkedid]['type'] = "out"
@@ -97,7 +96,7 @@ async def callback(mngr: panoramisk.Manager, msg: panoramisk.message) -> None:
                  "DestCallerIDNum": msg.DestCallerIDNum,
                  "ChannelState": msg.ChannelState}
         event_waiting = event
-        log_write('event_waiting_log', event_waiting, None)
+        logs.log_write('event_waiting_log', event_waiting, None)
         # Для входящих waiting
         if msg.ChannelState == '4' and all_id[msg.Linkedid]['type'] == "in":
             if 'Local' in msg.Channel:
@@ -157,7 +156,7 @@ async def callback(mngr: panoramisk.Manager, msg: panoramisk.message) -> None:
                  "DestCallerIDNum": msg.DestCallerIDNum,
                  "ChannelState": msg.ChannelState}
         event_up = event
-        log_write('event_up_log', event_up, None)
+        logs.log_write('event_up_log', event_up, None)
         # Смотрим статус канала, который завершил Dial, если Answer, то собираем данные из него
         if msg.DialStatus == 'ANSWER' and msg.ChannelState == '4' or msg.ChannelState == '6':
             # Проверяем что номер назначения не внешний, если это внутренний Local, то для id записи используем его
@@ -202,7 +201,7 @@ async def callback(mngr: panoramisk.Manager, msg: panoramisk.message) -> None:
                  "Linkedid": msg.Linkedid,
                  "ChannelState": msg.ChannelState}
         event_hangup = event
-        log_write('event_hangup_log', event_hangup, None)
+        logs.log_write('event_hangup_log', event_hangup, None)
         # pprint(event)
         # print('')
         # Для удаления данных о звонке из all_id проверяем, что linkedid и uniqueid равны
@@ -212,9 +211,9 @@ async def callback(mngr: panoramisk.Manager, msg: panoramisk.message) -> None:
             # поэтому нам необходимо сначала отправить hangup внутреннего, а затем внешнего
             # ОСНОВНОЙ ВНЕШНИЙ. Если внутренний ответил на звонок
             if 'exten_uniqueid_up' in all_id[msg.Linkedid]:
-                log_write('event_hangup_log(exten_uniqueid_up)', event_hangup, None)
+                logs.log_write('event_hangup_log(exten_uniqueid_up)', event_hangup, None)
                 if all_id[msg.Linkedid]['type'] == 'in':
-                    log_write('event_hangup_log(exten_uniqueid_up)', event_hangup, None)
+                    logs.log_write('event_hangup_log(exten_uniqueid_up)', event_hangup, None)
                     payload = events.event_hangup(all_id[msg.Linkedid]['exten_uniqueid_up'],
                                                   all_id[msg.Linkedid]['exten_number_up'])
                     send_request(payload, 'event_hangup_log')
@@ -243,7 +242,7 @@ async def callback(mngr: panoramisk.Manager, msg: panoramisk.message) -> None:
                 del all_id[msg.Linkedid]
             # Hangup основного канала, если он не был завершен до внутреннего
             else:
-                log_write('event_hangup_log(else)', event_hangup, None)
+                logs.log_write('event_hangup_log(else)', event_hangup, None)
                 if all_id[msg.Linkedid]['type'] == 'in':
                     # Hangup внешнего после того, как завершили exten_uniqueid_up
                     payload = events.event_hangup(msg.Linkedid,
@@ -260,7 +259,7 @@ async def callback(mngr: panoramisk.Manager, msg: panoramisk.message) -> None:
         # Не основной внешний канал
         elif msg.Linkedid in all_id and msg.Linkedid != msg.Uniqueid:
             # Hangup для внутреннего, который ответил на вызов
-            log_write('event_hangup_log(additional_channel)', event_hangup, None)
+            logs.log_write('event_hangup_log(additional_channel)', event_hangup, None)
             if 'exten_uniqueid_up' in all_id[msg.Linkedid] \
                     and all_id[msg.Linkedid]['exten_uniqueid_up'] == msg.Uniqueid:
                 payload = events.event_hangup(all_id[msg.Linkedid]['exten_uniqueid_up'],
@@ -308,16 +307,7 @@ async def callback(mngr: panoramisk.Manager, msg: panoramisk.message) -> None:
 def send_request(payload, event):
     comment = 'send_' + str(event)
     answer = (requests.post(url, data=json.dumps(payload), headers=headers)).json()
-    log_write(comment, payload, answer)
-
-
-# Запись в лог файл для дебага
-def log_write(comment, payload, answer):
-    nowtime = time.strftime('%H:%M:%S')
-    # pprint(nowtime + '' + str(payload))
-    with open('/var/log/renovation/amiconnect.log', 'a') as file:
-        file.write(comment + "   " + nowtime + " " + str(payload) + "\n")
-        file.write(str(answer) + "\n")
+    logs.log_write(comment, payload, answer)
 
 
 def main(mngr: panoramisk.Manager) -> None:
