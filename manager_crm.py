@@ -33,7 +33,7 @@ async def callback(mngr: panoramisk.Manager, msg: panoramisk.message) -> None:
     """Catch AMI Events/Actions"""
     # Проверяем, что подключились
     if msg.event == "FullyBooted":
-        with open('/var/log/amiconnect.log', 'a') as file:
+        with open('/var/log/renovation/amiconnect.log', 'a') as file:
             file.write("CONNECT" + "\n" + "\n" + "\n" + "\n")
         # print("Connect")
 

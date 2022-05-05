@@ -8,6 +8,7 @@ import time
 
 async def all_handler(request):
     data = await request.post()
+    log_write(data)
     # проверяем метод, который получили и сохраняем значения номеров:
     if data["method"] == 'make_call':
         operator = f"{data['employee_phone_number']}"
@@ -15,7 +16,7 @@ async def all_handler(request):
         if len(data["employee_phone_number"]) < 6:
             # проверяем длину вызываемого номера, тут далее обязательно должен быть return, для корректного выхода
             if len(data['contact_phone_number']) == 11:
-				#тут надо вставить установку на паузу для employee_phone_number?
+                #тут надо вставить установку на паузу для employee_phone_number?
                 # проверяем, что первый символ вызываемого номера 7, меняем на 8 и делаем originate
                 if data['contact_phone_number'][0] == '7':
                     number = f"8{data['contact_phone_number'][1:]}"
@@ -66,6 +67,7 @@ def good_request(result):
             "file_link": result
         }
     }
+    log_write(response_data)
     return web.json_response(response_data)
 
 
