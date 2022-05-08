@@ -9,6 +9,8 @@ def log_write(comment, payload, answer):
     elif comment == 'crmconnect':
         with open('/var/log/renovation/crmconnect.log', 'a') as file:
             file.write(nowtime + " " + str(payload) + "\n")
+    elif comment == "":
+        pass
     else:
         with open('/var/log/renovation/amiconnect.log', 'a') as file:
             file.write(comment + "   " + nowtime + " " + str(payload) + "\n")
