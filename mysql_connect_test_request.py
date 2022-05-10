@@ -31,7 +31,6 @@ def call_record(connection, i):
             with connection.cursor() as cursor:
                 query = "SELECT recordingfile FROM cdr WHERE uniqueid = %s" %i
                 cursor.execute(query)
-                connection.commit()
                 if cursor == 0:
                     print("0")
                 else:
@@ -46,6 +45,7 @@ def call_record(connection, i):
                         #day = date[6:8]
                         #path = "http://192.168.119.250/monitor/%s/%s/%s/%s" % (year, month, day, file_name)
                         #print(path)
+                cursor.close()
 
 def main():
     print("start")
