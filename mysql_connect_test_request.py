@@ -41,7 +41,7 @@ def call_record(connection, i):
                         file_name = row['recordingfile']
                         result = re.split('-', file_name)
                         print(result)
-                        if result == '':
+                        if result == ['']:
                             continue
                         else:
                             date = result[3]
