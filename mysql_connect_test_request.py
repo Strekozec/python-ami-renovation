@@ -45,7 +45,7 @@ def call_record(connection, i):
                         year = date[0:4]
                         month = date[4:6]
                         day = date[6:8]
-                        file = '/monitor/%s/%s/%s/%s' % (year, month, day, file_name)
+                        file = '/var/spool/asterisk/monitor/%s/%s/%s/%s' % (year, month, day, file_name)
                         if file_size(file) == 1:
                             path = "http://192.168.119.250/monitor/%s/%s/%s/%s" % (year, month, day, file_name)
                             print(file)
