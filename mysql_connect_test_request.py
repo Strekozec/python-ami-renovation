@@ -55,10 +55,13 @@ def call_record(connection, i):
 
 
 def file_size(file):
-    if os.path.getsize(file) < 1000:
-        return 0
-    else:
-        return 1
+    try:
+        if os.path.getsize(file) < 1000:
+            return 0
+        else:
+            return 1
+    except:
+        print("No such file")
 
 
 def main():
