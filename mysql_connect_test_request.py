@@ -2,6 +2,7 @@ from contextlib import closing
 import pymysql
 from pymysql.cursors import DictCursor
 import re
+import os
 
 
 # Попытка подключения к БД
@@ -36,20 +37,33 @@ def call_record(connection, i):
                 else:
                     for row in cursor:
                         print(row['recordingfile'])
+                        print("5")
                         file_name = row['recordingfile']
                         result = re.split('-', file_name)
                         print(result)
-                        #date = result[3]
-                        #year = date[0:4]
-                        #month = date[4:6]
-                        #day = date[6:8]
-                        #path = "http://192.168.119.250/monitor/%s/%s/%s/%s" % (year, month, day, file_name)
-                        #print(path)
-                cursor.close()
+                        date = result[3]
+                        year = date[0:4]
+                        month = date[4:6]
+                        day = date[6:8]
+                        file = '/monitor/%s/%s/%s/%s' % (year, month, day, file_name)
+                        if file_size(file) == 1:
+                            path = "http://192.168.119.250/monitor/%s/%s/%s/%s" % (year, month, day, file_name)
+                            print(file)
+                            print(path)
+                        else:
+                            print("no path")
+
+
+def file_size(file):
+    if os.path.getsize(file) < 1000:
+        return 0
+    else:
+        return 1
+
 
 def main():
     print("start")
-    id = ['1652191546.30311579', '1652191546.30311574']
+    id = ['1652102960.30267714', '1652102960.30267700']
     for i in id:
         print(i)
         call_record(connection(), i)
