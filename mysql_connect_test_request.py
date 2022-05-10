@@ -14,10 +14,11 @@ def connection():
             password='c9eec2B4f3',
             db='asterisk',
             charset='utf8mb4',
-            cursorclass=cursor
+            cursorclass=cursor,
+            autocommit=True
         )
         return connection
-    except pymysql.err.OperationalError:
+    except:
         return 0
 
 
@@ -30,6 +31,7 @@ def call_record(connection, i):
             with connection.cursor() as cursor:
                 query = "SELECT recordingfile FROM cdr WHERE uniqueid = %s" %i
                 cursor.execute(query)
+                connection.commit()
                 if cursor == 0:
                     print("0")
                 else:
@@ -47,7 +49,7 @@ def call_record(connection, i):
 
 def main():
     print("start")
-    id = ['1648375139.27977801', '1648375139.27977796']
+    id = ['1652191546.30311579', '1652191546.30311574']
     for i in id:
         print(i)
         call_record(connection(), i)
