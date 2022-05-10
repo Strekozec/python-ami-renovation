@@ -41,17 +41,20 @@ def call_record(connection, i):
                         file_name = row['recordingfile']
                         result = re.split('-', file_name)
                         print(result)
-                        date = result[3]
-                        year = date[0:4]
-                        month = date[4:6]
-                        day = date[6:8]
-                        file = '/var/spool/asterisk/monitor/%s/%s/%s/%s' % (year, month, day, file_name)
-                        if file_size(file) == 1:
-                            path = "http://192.168.119.250/monitor/%s/%s/%s/%s" % (year, month, day, file_name)
-                            print(file)
-                            print(path)
+                        if result == '':
+                            continue
                         else:
-                            print("no path")
+                            date = result[3]
+                            year = date[0:4]
+                            month = date[4:6]
+                            day = date[6:8]
+                            file = '/var/spool/asterisk/monitor/%s/%s/%s/%s' % (year, month, day, file_name)
+                            if file_size(file) == 1:
+                                path = "http://192.168.119.250/monitor/%s/%s/%s/%s" % (year, month, day, file_name)
+                                print(file)
+                                print(path)
+                            else:
+                                print("no path")
 
 
 def file_size(file):
