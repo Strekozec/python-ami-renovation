@@ -17,7 +17,7 @@ def connection():
             cursorclass=cursor
         )
         return connection
-    except pymysql.err.OperationalError:
+    except:
         return 0
 
 
