@@ -8,7 +8,7 @@ import re
 def connection():
     try:
         cursor = pymysql.cursors.DictCursor
-        connect = pymysql.connect(
+        connection = pymysql.connect(
             host='192.168.129.58',
             user='asterisk',
             password='c9eec2B4f3',
@@ -17,25 +17,17 @@ def connection():
             cursorclass=cursor,
             autocommit=True
         )
-        return connect
+        return connection
     except:
         return 0
 
 
 # Запрос файла записи разговора из БД и возврат пути к этому файлу
-def call_record(i):
-    try:
-        cursor = pymysql.cursors.DictCursor
-        connect = pymysql.connect(
-            host='192.168.129.58',
-            user='asterisk',
-            password='c9eec2B4f3',
-            db='asterisk',
-            charset='utf8mb4',
-            cursorclass=cursor,
-            autocommit=True
-        )
-        with closing(connect) as connection:
+def call_record(connection, i):
+    if connection == 0:
+        print("error")
+    else:
+        with closing(connection) as connection:
             with connection.cursor() as cursor:
                 query = "SELECT recordingfile FROM cdr WHERE uniqueid = %s" %i
                 cursor.execute(query)
@@ -54,16 +46,13 @@ def call_record(i):
                         #day = date[6:8]
                         #path = "http://192.168.119.250/monitor/%s/%s/%s/%s" % (year, month, day, file_name)
                         #print(path)
-    except:
-        print("Error connect")
-
 
 def main():
     print("start")
     id = ['1652191546.30311579', '1652191546.30311574']
     for i in id:
         print(i)
-        call_record(i)
+        call_record(connection(), i)
         print("end cycle")
 
 
