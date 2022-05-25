@@ -4,6 +4,9 @@ from aiohttp import web
 import mysql_connect
 import originate_ami
 import logs
+import os
+import time
+
 
 async def all_handler(request):
     data = await request.post()
@@ -19,7 +22,10 @@ async def all_handler(request):
                 # проверяем, что первый символ вызываемого номера 7, меняем на 8 и делаем originate
                 if data['contact_phone_number'][0] == '7':
                     number = f"8{data['contact_phone_number'][1:]}"
+                    os.system('asterisk -rx \"queue pause member Local/%s@from-queue/n queue 7200 reason call_originate\"') % operator
+                    time.sleep(2)
                     originate_ami.originate(operator, number)
+                    os.system('asterisk -rx \"queue unpause member Local/%s@from-queue/n queue 7200 reason call_originate\"') % operator
                     return good_request_call()
                 # проверяем, что первый символ вызываемого номера 8, ничего не меняем и делаем originate
                 elif data['contact_phone_number'][0] == '8':
@@ -56,6 +62,7 @@ def good_request_call():
         "error": 0,
         "data": None
     }
+    logs.log_write('crmconnect', response_data, None)
     return web.json_response(response_data)
 
 
