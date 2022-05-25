@@ -22,10 +22,10 @@ async def all_handler(request):
                 # проверяем, что первый символ вызываемого номера 7, меняем на 8 и делаем originate
                 if data['contact_phone_number'][0] == '7':
                     number = f"8{data['contact_phone_number'][1:]}"
-                    os.system('asterisk -rx \"queue pause member Local/%s@from-queue/n queue 7200 reason call_originate\"') % operator
+                    os.system(f'asterisk -rx "queue pause member Local/{operator}@from-queue/n queue 7200 reason call_originate"')
                     time.sleep(2)
                     originate_ami.originate(operator, number)
-                    os.system('asterisk -rx \"queue unpause member Local/%s@from-queue/n queue 7200 reason call_originate\"') % operator
+                    os.system(f'asterisk -rx "queue unpause member Local/{operator}@from-queue/n queue 7200 reason call_originate"')
                     return good_request_call()
                 # проверяем, что первый символ вызываемого номера 8, ничего не меняем и делаем originate
                 elif data['contact_phone_number'][0] == '8':
