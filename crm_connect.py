@@ -22,15 +22,12 @@ async def all_handler(request):
                 # проверяем, что первый символ вызываемого номера 7, меняем на 8 и делаем originate
                 if data['contact_phone_number'][0] == '7':
                     number = f"8{data['contact_phone_number'][1:]}"
-                    os.system(f'asterisk -rx "queue pause member Local/{operator}@from-queue/n queue 7200 reason call_originate"')
-                    time.sleep(2)
-                    originate_ami.originate(operator, number)
-                    os.system(f'asterisk -rx "queue unpause member Local/{operator}@from-queue/n queue 7200 reason call_originate"')
+                    call_with_pause(operator, number)
                     return good_request_call()
                 # проверяем, что первый символ вызываемого номера 8, ничего не меняем и делаем originate
                 elif data['contact_phone_number'][0] == '8':
                     number = f"{data['contact_phone_number']}"
-                    originate_ami.originate(operator, number)
+                    call_with_pause(operator, number)
                     return good_request_call()
                 else:
                     return bad_request("bad outgoing full number without 7 or 8")
@@ -55,6 +52,13 @@ async def all_handler(request):
                     continue
             else:
                 return good_request(result)
+
+
+def call_with_pause(operator, number):
+    os.system(f'asterisk -rx "queue pause member Local/{operator}@from-queue/n queue 7200 reason call_originate"')
+    time.sleep(2)
+    originate_ami.originate(operator, number)
+    os.system(f'asterisk -rx "queue unpause member Local/{operator}@from-queue/n queue 7200 reason call_originate"')
 
 
 def good_request_call():
