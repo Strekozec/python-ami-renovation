@@ -13,7 +13,7 @@ async def all_handler(request):
     logs.log_write('crmconnect', data, None)
     # проверяем метод, который получили и сохраняем значения номеров:
     if data["method"] == 'make_call':
-        operator = f"{data['employee_phone_number']}"
+        operator = str(f"{data['employee_phone_number']}")
         # проверяем длину внутреннего номера
         if len(data["employee_phone_number"]) < 6:
             # проверяем длину вызываемого номера, тут далее обязательно должен быть return, для корректного выхода
@@ -56,9 +56,11 @@ async def all_handler(request):
 
 def call_with_pause(operator, number):
     os.system(f"asterisk -rx 'queue pause member Local/{operator}@from-queue/n queue 7200 reason call_originate'")
-    time.sleep(2)
+    logs.log_write('crmconnect', f'pause member {operator}', None)
+    time.sleep(20)
     originate_ami.originate(operator, number)
     os.system(f"asterisk -rx 'queue unpause member Local/{operator}@from-queue/n queue 7200 reason call_originate'")
+    logs.log_write('crmconnect', f'unpause member {operator}', None)
 
 
 def good_request_call():
