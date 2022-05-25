@@ -55,10 +55,10 @@ async def all_handler(request):
 
 
 def call_with_pause(operator, number):
-    os.system(f'asterisk -rx "queue pause member Local/{operator}@from-queue/n queue 7200 reason call_originate"')
+    os.system(f"asterisk -rx 'queue pause member Local/{operator}@from-queue/n queue 7200 reason call_originate'")
     time.sleep(2)
     originate_ami.originate(operator, number)
-    os.system(f'asterisk -rx "queue unpause member Local/{operator}@from-queue/n queue 7200 reason call_originate"')
+    os.system(f"asterisk -rx 'queue unpause member Local/{operator}@from-queue/n queue 7200 reason call_originate'")
 
 
 def good_request_call():
