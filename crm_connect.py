@@ -57,7 +57,7 @@ async def all_handler(request):
 def call_with_pause(operator, number):
     os.system(f"asterisk -rx 'queue pause member Local/{operator}@from-queue/n queue 7200 reason call_originate'")
     logs.log_write('crmconnect', f'pause member {operator}', None)
-    time.sleep(20)
+    time.sleep(2)
     originate_ami.originate(operator, number)
     os.system(f"asterisk -rx 'queue unpause member Local/{operator}@from-queue/n queue 7200 reason call_originate'")
     logs.log_write('crmconnect', f'unpause member {operator}', None)
