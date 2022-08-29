@@ -5,9 +5,10 @@ from asterisk.ami import SimpleAction
 import time
 import logs
 
+
 def originate(operator, number):
-    client = AMIClient(address='127.0.0.1',port=5038)
-    client.login(username='testfull',secret='1736ffe643a4d72efa9fbce0dc50b1fc')
+    client = AMIClient(address='127.0.0.1', port=5038)
+    client.login(username='testfull', secret='1736ffe643a4d72efa9fbce0dc50b1fc')
     action = SimpleAction(
         'Originate',
         Channel=f'SIP/{operator}',
