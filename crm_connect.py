@@ -37,7 +37,8 @@ async def all_handler(request):
             return bad_request("len extension 6 or lower")
 
     elif data["method"] == 'call_records':
-        tyers = 0
+        attempt = 0
+        local_attempt = 0
         ids = (data['call_id'], data['parent_id'])
         for id in ids:
             result = mysql_connect.call_record(mysql_connect.connection(), id)
@@ -45,11 +46,19 @@ async def all_handler(request):
                 # Если проблема с подключением к БД
                 return bad_request("Mysql connection error")
             elif result == None:
-                tyers += 1
-                if tyers == 2:
-                    return bad_request("not found id")
+                result = mysql_connect.call_record(mysql_connect.connection_local(), id)
+                if result == 'error':
+                    # Если проблема с подключением к БД
+                    return bad_request("Mysql connection error")
+                elif result == None:
+                    local_attempt += 1
+                    attempt += 1
+                    if local_attempt == 2 or attempt == 2:
+                        return bad_request("not found id")
+                    else:
+                        continue
                 else:
-                    continue
+                    return good_request(result)
             else:
                 return good_request(result)
 

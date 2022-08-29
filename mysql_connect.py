@@ -9,22 +9,30 @@ import os
 def connection():
     try:
         cursor = pymysql.cursors.DictCursor
-        '''connection = pymysql.connect(
+        connection = pymysql.connect(
             host='192.168.129.58',
             user='asterisk',
             password='c9eec2B4f3',
             db='asterisk',
             charset='utf8mb4',
             cursorclass=cursor
-        )'''
+        )
+        return connection
+    except:
+        return 0
+
+
+def connection_local():
+    try:
+        cursor = pymysql.cursors.DictCursor
         connection = pymysql.connect(
-            host = 'localhost',
-            user = 'freepbxuser',
-            password = '3539695e410da02aba61e817746409ef',
-            db = 'asteriskcdrdb',
-            charset = 'utf8mb4',
-            cursorclass = cursor
-            )
+            host='localhost',
+            user='freepbxuser',
+            password='3539695e410da02aba61e817746409ef',
+            db='asteriskcdrdb',
+            charset='utf8mb4',
+            cursorclass=cursor
+        )
         return connection
     except:
         return 0
