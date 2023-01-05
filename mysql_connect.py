@@ -45,7 +45,7 @@ def call_record(connection, id):
     else:
         with closing(connection) as connection:
             with connection.cursor() as cursor:
-                query = "SELECT recordingfile FROM cdr WHERE uniqueid = %s" %id
+                query = "SELECT recordingfile FROM cdr WHERE uniqueid = '%s'" %id
                 cursor.execute(query)
                 if cursor == 0:
                     return 'not found'
