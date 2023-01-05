@@ -42,6 +42,7 @@ async def all_handler(request):
         ids = (data['call_id'], data['parent_id'])
         for id in ids:
             result = mysql_connect.call_record(mysql_connect.connection(), id)
+            logs.log_write('crmconnect', result, None)
             if result == 'error':
                 # Если проблема с подключением к БД
                 return bad_request("Mysql connection error")
