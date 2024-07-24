@@ -6,6 +6,7 @@ import os
 
 
 # Попытка подключения к БД
+#!!!ВАЖНО!!! Можно удалить, не используем эту функцию, а так же удалить вызов этой функции в crm_connect.py
 def connection():
     try:
         cursor = pymysql.cursors.DictCursor
@@ -74,12 +75,3 @@ def file_size(file):
             return 1
     except:
         print("No such file")
-
-
-'''def main():
-    print("start")
-    call_record(connection(), id)
-
-
-if __name__ == '__main__':
-    main()'''
