@@ -99,7 +99,7 @@ def web_server():
 
 
 def main():
-    asyncio.run(web_server())
+    web_server()
 
 
 if __name__ == '__main__':
