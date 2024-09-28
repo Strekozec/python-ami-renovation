@@ -112,3 +112,10 @@ def web_server():
     app.add_routes([web.route('*', '/', all_handler)])
     web.run_app(app, host='0.0.0.0', port='8081')
 
+
+def main():
+    asyncio.run(web_server())
+
+
+if __name__ == '__main__':
+    main()
