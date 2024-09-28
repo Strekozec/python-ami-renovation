@@ -48,7 +48,7 @@ async def all_handler(request):
                 return bad_request("Mysql connection error")
             elif result == None:
                 attempt += 1
-                if non_local_attempt == 2 or attempt == 2:
+                if attempt == 2:
                     logs.log_write('crmconnect', "Запись не найдена", None)
                     return bad_request("not found id")
                 else:
