@@ -38,7 +38,6 @@ async def all_handler(request):
 
     elif data["method"] == 'call_records':
         attempt = 0
-        non_local_attempt = 0
         ids = (data['call_id'], data['parent_id'])
         for id in ids:
             result = mysql_connect.call_record(mysql_connect.connection_local(), id)
@@ -48,8 +47,12 @@ async def all_handler(request):
                 # Если проблема с подключением к БД
                 return bad_request("Mysql connection error")
             elif result == None:
-                logs.log_write('crmconnect', "Локально не найдено", None)
-                return bad_request("not found id")
+                attempt += 1
+                if non_local_attempt == 2 or attempt == 2:
+                    logs.log_write('crmconnect', "Запись не найдена", None)
+                    return bad_request("not found id")
+                else:
+                    continue
             else:
                 return good_request(result)
 
