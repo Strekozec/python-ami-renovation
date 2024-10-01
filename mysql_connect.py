@@ -6,23 +6,6 @@ import os
 
 
 # Попытка подключения к БД
-#!!!ВАЖНО!!! Можно удалить, не используем эту функцию, а так же удалить вызов этой функции в crm_connect.py
-def connection():
-    try:
-        cursor = pymysql.cursors.DictCursor
-        connection = pymysql.connect(
-            host='192.168.129.58',
-            user='asterisk',
-            password='c9eec2B4f3',
-            db='asterisk',
-            charset='utf8mb4',
-            cursorclass=cursor
-        )
-        return connection
-    except:
-        return 0
-
-
 def connection_local():
     try:
         cursor = pymysql.cursors.DictCursor
@@ -63,7 +46,7 @@ def call_record(connection, id):
                             day = date[6:8]
                             file = '/var/spool/asterisk/monitor/%s/%s/%s/%s' % (year, month, day, file_name)
                             if file_size(file) == 1:
-                                path = "http://192.168.119.250/monitor/%s/%s/%s/%s" % (year, month, day, file_name)
+                                path = "http://192.168.128.8/monitor/%s/%s/%s/%s" % (year, month, day, file_name)
                                 return path
 
 

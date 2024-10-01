@@ -303,7 +303,7 @@ def main(mngr: panoramisk.Manager) -> None:
     mngr.register_event('*', callback=callback)
     mngr.connect()
     try:
-        mngr.loop.run_forever(crm_connect.web_server())
+        mngr.loop.run_forever()
     except (SystemExit, KeyboardInterrupt):
         mngr.loop.close()
         exit(0)
